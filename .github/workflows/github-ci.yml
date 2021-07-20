@@ -29,6 +29,10 @@ jobs:
       - name: Checkout repository code
         uses: actions/checkout@v2
 
+      - name: Install node_modules
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: npm install
+
       - name: Test SASS
         run: npm run test:sass
 
