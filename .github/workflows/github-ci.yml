@@ -65,5 +65,6 @@ jobs:
       - name: Test Cypress
         uses: cypress-io/github-action@v2
         with:
+          cache-key: node_modules-${{ hashFiles('package-lock.json') }}
           start: npm start
           wait-on: 'http://localhost:3000'
