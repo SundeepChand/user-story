@@ -1,5 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { trackPromise, usePromiseTracker } from 'react-promise-tracker'
+import { parse, stringify } from 'query-string'
+import { navigate, useLocation } from '@reach/router'
+import axios from 'axios'
 
 import StoriesList from './StoriesList'
 import Pagination from './Pagination'
@@ -8,13 +11,23 @@ import ProductList from './ProductList'
 import userStory from '../services/user_story'
 
 const Stories = ({ authorId, followerId }) => {
-  const [selectedStatuses, setSelectedStatuses] = useState([])
+  const location = useLocation()
+
+  const filters = parse(location.search, { arrayFormat: 'bracket' })
+
+  const [searchFilters, setSearchFilters] = useState(filters ?? {})
+
+  const [selectedStatuses, setSelectedStatuses] = useState(
+    searchFilters.statuses ?? []
+  )
 
   const [page, setPage] = useState(1)
 
   const [sort, setSort] = useState('Most Voted')
 
-  const [selectedCategories, setSelectedCategories] = useState([])
+  const [selectedCategories, setSelectedCategories] = useState(
+    searchFilters.categories ?? []
+  )
 
   const { promiseInProgress } = usePromiseTracker({ area: 'stories-div' })
 
@@ -28,22 +41,55 @@ const Stories = ({ authorId, followerId }) => {
 
   const [authorQuery, setAuthorQuery] = useState('')
 
+  const countCancelToken = useRef()
+
+  const storiesCancelToken = useRef()
+
   const getPage = useCallback((page) => {
     setPage(page)
   }, [])
 
   useEffect(() => {
+    const filtersString = stringify(searchFilters, {
+      arrayFormat: 'bracket',
+      skipEmptyString: true
+    })
+    if (filtersString === '') {
+      navigate(location.pathname)
+      return
+    }
+    navigate(`${location.pathname}?${filtersString}`)
+  }, [
+    searchFilters,
+    searchFilters.statuses,
+    searchFilters.categories,
+    searchFilters.product,
+    location.pathname
+  ])
+
+  useEffect(() => {
     const fetchStoryCount = async () => {
-      const response = await userStory.getStoryCount(
-        selectedStatuses,
-        authorId,
-        authorQuery,
-        selectedCategories,
-        productQuery,
-        searchQuery,
-        followerId
-      )
-      setStoryCount(response.data.data.userStoriesConnection.aggregate.count)
+      if (typeof countCancelToken.current !== typeof undefined) {
+        countCancelToken.current.cancel(
+          'Cancelling fetch story count as another call to fetch story count is made'
+        )
+      }
+
+      countCancelToken.current = axios.CancelToken.source()
+
+      try {
+        const response = await userStory.getStoryCount(
+          selectedStatuses,
+          authorId,
+          authorQuery,
+          selectedCategories,
+          productQuery,
+          searchQuery,
+          followerId,
+          countCancelToken.current.token
+        )
+        setStoryCount(response.data.data.userStoriesConnection.aggregate.count)
+      } catch (e) {}
     }
     fetchStoryCount()
   }, [
@@ -58,17 +104,29 @@ const Stories = ({ authorId, followerId }) => {
 
   useEffect(() => {
     const fetchStories = async () => {
-      const response = await userStory.getStories(
-        page,
-        selectedStatuses,
-        authorId,
-        authorQuery,
-        selectedCategories,
-        productQuery,
-        searchQuery,
-        followerId
-      )
-      setStories(response.data.data.userStories)
+      if (typeof storiesCancelToken.current !== typeof undefined) {
+        storiesCancelToken.current.cancel(
+          'Cancelling fetch story as another call to fetch story is made'
+        )
+      }
+
+      storiesCancelToken.current = axios.CancelToken.source()
+
+      try {
+        const response = await userStory.getStories(
+          page,
+          selectedStatuses,
+          authorId,
+          authorQuery,
+          selectedCategories,
+          productQuery,
+          searchQuery,
+          followerId,
+          storiesCancelToken.current.token
+        )
+
+        setStories(response.data.data.userStories)
+      } catch (e) {}
     }
     trackPromise(fetchStories(), 'stories-div')
   }, [
@@ -105,7 +163,11 @@ const Stories = ({ authorId, followerId }) => {
 
   return (
     <>
-      <ProductList setProductQuery={setProductQuery} />
+      <ProductList
+        setProductQuery={setProductQuery}
+        searchFilters={searchFilters}
+        setSearchFilters={setSearchFilters}
+      />
 
       <SearchBar
         sort={sort}
@@ -117,6 +179,8 @@ const Stories = ({ authorId, followerId }) => {
         setSelectedStatuses={setSelectedStatuses}
         selectedCategories={selectedCategories}
         setSelectedCategories={setSelectedCategories}
+        searchFilters={searchFilters}
+        setSearchFilters={setSearchFilters}
       />
 
       <div className='stories-div'>

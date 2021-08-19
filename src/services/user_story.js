@@ -37,7 +37,8 @@ const userStory = {
     selectedCategories,
     productQuery,
     searchQuery,
-    followerId
+    followerId,
+    cancelToken = null
   ) => {
     authorId = !authorId ? '' : `id: "${authorId}"`
     followerId = !followerId ? '' : `followers: "${followerId}"`
@@ -86,7 +87,7 @@ const userStory = {
             ${BASIC_STORY_INFO_FRAGMENT}
             `
     }
-    return apiCall('/graphql', storiesQuery)
+    return apiCall('/graphql', storiesQuery, cancelToken)
   },
   getStory: (storyId) => {
     const storyQuery = {
@@ -121,7 +122,8 @@ const userStory = {
     selectedCategories,
     productQuery,
     searchQuery,
-    followerId
+    followerId,
+    cancelToken = null
   ) => {
     authorId = !authorId ? '' : `id: "${authorId}"`
     followerId = !followerId ? '' : `followers: "${followerId}"`
@@ -146,7 +148,7 @@ const userStory = {
               }
             }`
     }
-    return apiCall('/graphql', storyCountQuery)
+    return apiCall('/graphql', storyCountQuery, cancelToken)
   },
   updateUserStoryDescription: (storyId, description) => {
     const updateQuery = {

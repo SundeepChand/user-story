@@ -40,10 +40,10 @@ const ProductCard = ({ product, selected, setProduct }) => {
   )
 }
 
-const ProductList = ({ setProductQuery }) => {
+const ProductList = ({ setProductQuery, searchFilters, setSearchFilters }) => {
   const [productCount, setProductCount] = useState(3)
 
-  const [product, setProduct] = useState('All')
+  const [product, setProduct] = useState(searchFilters.product ?? 'All')
 
   const [products, setProducts] = useState(null)
 
@@ -63,12 +63,16 @@ const ProductList = ({ setProductQuery }) => {
   }, [])
 
   useEffect(() => {
+    const newSearchFilterObject = searchFilters
     if (product !== 'All') {
       setProductQuery(`product : {Name: "${product}"}`)
+      newSearchFilterObject.product = product
     } else {
       setProductQuery(``)
+      newSearchFilterObject.product = ''
     }
-  }, [product, setProductQuery])
+    setSearchFilters(newSearchFilterObject)
+  }, [product, setProductQuery, searchFilters, setSearchFilters])
 
   return (
     <div className='product-list-container'>

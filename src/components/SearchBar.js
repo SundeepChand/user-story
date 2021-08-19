@@ -15,19 +15,25 @@ const SearchBar = (props) => {
     selectedStatuses,
     setSelectedStatuses,
     selectedCategories,
-    setSelectedCategories
+    setSelectedCategories,
+    searchFilters,
+    setSearchFilters
   } = props
 
   const [categories, setCategories] = useState([])
 
   const [filtersOpened, setFiltersOpened] = useState(false)
 
-  const toggleFilters = (filters, setFilters, value) => () => {
+  const toggleFilters = (name, filters, setFilters, value) => () => {
+    const newFiltersObject = searchFilters
     if (filters.find((filter) => filter === value)) {
       setFilters(filters.filter((filter) => filter !== value))
+      newFiltersObject[name] = filters.filter((filter) => filter !== value)
     } else {
       setFilters(filters.concat(value))
+      newFiltersObject[name] = filters.concat(value)
     }
+    setSearchFilters(newFiltersObject)
     setPage(1)
   }
 
@@ -75,6 +81,7 @@ const SearchBar = (props) => {
                   <span className='checkbox-row' key={key}>
                     <CheckBox
                       onChange={toggleFilters(
+                        'statuses',
                         selectedStatuses,
                         setSelectedStatuses,
                         state.status
@@ -119,6 +126,7 @@ const SearchBar = (props) => {
                     id={category}
                     checked={!!selectedCategories.find((c) => c === category)}
                     onChange={toggleFilters(
+                      'categories',
                       selectedCategories,
                       setSelectedCategories,
                       category
