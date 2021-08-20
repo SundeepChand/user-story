@@ -21,9 +21,12 @@ const Stories = ({ authorId, followerId }) => {
     searchFilters.statuses ?? []
   )
 
-  const [page, setPage] = useState(1)
+  const initialPage = Number(searchFilters.page)
+  const [page, setPage] = useState(
+    isNaN(initialPage) || initialPage <= 0 ? 1 : initialPage
+  )
 
-  const [sort, setSort] = useState('Most Voted')
+  const [sort, setSort] = useState(searchFilters.sort ?? 'Most Voted')
 
   const [selectedCategories, setSelectedCategories] = useState(
     searchFilters.categories ?? []
@@ -45,9 +48,19 @@ const Stories = ({ authorId, followerId }) => {
 
   const storiesCancelToken = useRef()
 
-  const getPage = useCallback((page) => {
-    setPage(page)
-  }, [])
+  const getPage = useCallback(
+    (page) => {
+      const newFiltersObject = searchFilters
+      if (page <= 1) {
+        newFiltersObject.page = undefined
+      } else {
+        newFiltersObject.page = page
+      }
+      setSearchFilters(newFiltersObject)
+      setPage(page)
+    },
+    [searchFilters, setSearchFilters]
+  )
 
   useEffect(() => {
     const filtersString = stringify(searchFilters, {
@@ -64,6 +77,8 @@ const Stories = ({ authorId, followerId }) => {
     searchFilters.statuses,
     searchFilters.categories,
     searchFilters.product,
+    searchFilters.sort,
+    searchFilters.page,
     location.pathname
   ])
 
@@ -174,7 +189,7 @@ const Stories = ({ authorId, followerId }) => {
         setSort={setSort}
         setSearchQuery={setSearchQuery}
         setAuthorQuery={setAuthorQuery}
-        setPage={setPage}
+        getPage={getPage}
         selectedStatuses={selectedStatuses}
         setSelectedStatuses={setSelectedStatuses}
         selectedCategories={selectedCategories}
@@ -186,12 +201,7 @@ const Stories = ({ authorId, followerId }) => {
       <div className='stories-div'>
         <StoriesList stories={stories} isLoading={promiseInProgress} />
       </div>
-      <Pagination
-        getPage={getPage}
-        storyCount={storyCount}
-        status={selectedStatuses}
-        productQuery={productQuery}
-      />
+      <Pagination page={page} getPage={getPage} storyCount={storyCount} />
     </>
   )
 }

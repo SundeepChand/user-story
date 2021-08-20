@@ -1,34 +1,37 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   EOS_KEYBOARD_ARROW_LEFT,
   EOS_KEYBOARD_ARROW_RIGHT
 } from 'eos-icons-react'
 
 const Pagination = (props) => {
-  const { getPage, storyCount, status, productQuery } = props
+  const { page, getPage, storyCount } = props
 
-  const [currNumber, setCurrNumber] = useState(1)
+  const [currNumber, setCurrNumber] = useState(page)
+
+  const updatePage = useCallback(
+    (page) => {
+      getPage(page)
+      setCurrNumber(page)
+    },
+    [getPage, setCurrNumber]
+  )
 
   const [pages, setPages] = useState(null)
 
   useEffect(() => {
-    const resetPage = () => {
-      setCurrNumber(1)
-      getPage(1)
-    }
-    resetPage()
-  }, [status, productQuery, getPage])
-
-  useEffect(() => {
     if (typeof storyCount === typeof 0) {
-      if (storyCount >= 5) {
-        const n = Math.ceil(storyCount / 5)
+      const n = Math.ceil(storyCount / 5)
+      if (page >= n) {
+        updatePage(n)
+      }
+      if (n > 1) {
         setPages([...Array(n + 1).keys()].slice(1))
       } else {
         setPages([1])
       }
     }
-  }, [storyCount])
+  }, [storyCount, page, updatePage])
 
   return (
     <div className='pagination'>
@@ -38,8 +41,7 @@ const Pagination = (props) => {
         }`}
         onClick={() => {
           if (pages.find((page) => page === currNumber - 1)) {
-            setCurrNumber((currNumber) => currNumber - 1)
-            getPage(currNumber - 1)
+            updatePage(currNumber - 1)
           }
         }}
       >
@@ -53,8 +55,7 @@ const Pagination = (props) => {
                 <span
                   className={`number ${currNumber === ele ? 'selected' : ''}`}
                   onClick={() => {
-                    setCurrNumber(ele)
-                    getPage(ele)
+                    updatePage(ele)
                   }}
                   key={key}
                 >
@@ -70,8 +71,7 @@ const Pagination = (props) => {
         }`}
         onClick={() => {
           if (pages.find((page) => page === currNumber + 1)) {
-            setCurrNumber((currNumber) => currNumber + 1)
-            getPage(currNumber + 1)
+            updatePage(currNumber + 1)
           }
         }}
       >

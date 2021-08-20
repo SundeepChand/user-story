@@ -11,7 +11,7 @@ const SearchBar = (props) => {
     setSort,
     setSearchQuery,
     setAuthorQuery,
-    setPage,
+    getPage,
     selectedStatuses,
     setSelectedStatuses,
     selectedCategories,
@@ -34,7 +34,7 @@ const SearchBar = (props) => {
       newFiltersObject[name] = filters.concat(value)
     }
     setSearchFilters(newFiltersObject)
-    setPage(1)
+    getPage(1)
   }
 
   useEffect(() => {
@@ -101,13 +101,18 @@ const SearchBar = (props) => {
             <label
               className='link link-default'
               onClick={() => {
+                const newFiltersObject = searchFilters
                 if (selectedStatuses.length < Lists.stateList.length) {
-                  setSelectedStatuses(
-                    Lists.stateList.map((state) => state.status)
+                  const newStatuses = Lists.stateList.map(
+                    (state) => state.status
                   )
+                  setSelectedStatuses(newStatuses)
+                  newFiltersObject.statuses = newStatuses
                 } else {
                   setSelectedStatuses([])
+                  newFiltersObject.statuses = []
                 }
+                setSearchFilters(newFiltersObject)
               }}
             >
               {selectedStatuses.length === Lists.stateList.length
@@ -138,11 +143,15 @@ const SearchBar = (props) => {
             <label
               className='link link-default'
               onClick={() => {
+                const newFiltersObject = searchFilters
                 if (selectedCategories.length < categories.length) {
                   setSelectedCategories(categories)
+                  newFiltersObject.categories = categories
                 } else {
                   setSelectedCategories([])
+                  newFiltersObject.categories = []
                 }
+                setSearchFilters(newFiltersObject)
               }}
             >
               {selectedCategories.length === categories.length
@@ -162,6 +171,14 @@ const SearchBar = (props) => {
                     checked={sort === item}
                     onChange={() => {
                       setSort(item)
+                      const newSearchFilters = searchFilters
+                      if (item === Lists.sortByList[0]) {
+                        newSearchFilters.sort = ''
+                      } else {
+                        newSearchFilters.sort = item
+                      }
+                      setSearchFilters(newSearchFilters)
+                      getPage(1)
                     }}
                   />
                 </div>
