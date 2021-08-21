@@ -20,18 +20,25 @@ const Pagination = (props) => {
   const [pages, setPages] = useState(null)
 
   useEffect(() => {
+    setCurrNumber(page)
+  }, [page])
+
+  useEffect(() => {
     if (typeof storyCount === typeof 0) {
       const n = Math.ceil(storyCount / 5)
-      if (page >= n) {
-        updatePage(n)
-      }
+      // if (n <= 0) {
+      //   updatePage(1)
+      // }
+      // else if (page >= n) {
+      //   updatePage(n)
+      // }
       if (n > 1) {
         setPages([...Array(n + 1).keys()].slice(1))
       } else {
         setPages([1])
       }
     }
-  }, [storyCount, page, updatePage])
+  }, [storyCount, updatePage])
 
   return (
     <div className='pagination'>

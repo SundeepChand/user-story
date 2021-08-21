@@ -7,34 +7,29 @@ import userStory from '../services/user_story'
 
 const SearchBar = (props) => {
   const {
-    sort,
-    setSort,
     setSearchQuery,
     setAuthorQuery,
-    getPage,
-    selectedStatuses,
-    setSelectedStatuses,
-    selectedCategories,
-    setSelectedCategories,
     searchFilters,
     setSearchFilters
   } = props
+
+  const {
+    statuses: selectedStatuses,
+    categories: selectedCategories
+  } = searchFilters
 
   const [categories, setCategories] = useState([])
 
   const [filtersOpened, setFiltersOpened] = useState(false)
 
-  const toggleFilters = (name, filters, setFilters, value) => () => {
-    const newFiltersObject = searchFilters
+  const toggleFilters = (name, filters, value) => () => {
+    const newFiltersObject = Object.assign({ ...searchFilters }, { page: 1 })
     if (filters.find((filter) => filter === value)) {
-      setFilters(filters.filter((filter) => filter !== value))
       newFiltersObject[name] = filters.filter((filter) => filter !== value)
     } else {
-      setFilters(filters.concat(value))
       newFiltersObject[name] = filters.concat(value)
     }
     setSearchFilters(newFiltersObject)
-    getPage(1)
   }
 
   useEffect(() => {
@@ -83,7 +78,6 @@ const SearchBar = (props) => {
                       onChange={toggleFilters(
                         'statuses',
                         selectedStatuses,
-                        setSelectedStatuses,
                         state.status
                       )}
                       id={state.status}
@@ -101,15 +95,16 @@ const SearchBar = (props) => {
             <label
               className='link link-default'
               onClick={() => {
-                const newFiltersObject = searchFilters
+                const newFiltersObject = Object.assign(
+                  { ...searchFilters },
+                  { page: 1 }
+                )
                 if (selectedStatuses.length < Lists.stateList.length) {
                   const newStatuses = Lists.stateList.map(
                     (state) => state.status
                   )
-                  setSelectedStatuses(newStatuses)
                   newFiltersObject.statuses = newStatuses
                 } else {
-                  setSelectedStatuses([])
                   newFiltersObject.statuses = []
                 }
                 setSearchFilters(newFiltersObject)
@@ -133,7 +128,6 @@ const SearchBar = (props) => {
                     onChange={toggleFilters(
                       'categories',
                       selectedCategories,
-                      setSelectedCategories,
                       category
                     )}
                   />
@@ -143,12 +137,13 @@ const SearchBar = (props) => {
             <label
               className='link link-default'
               onClick={() => {
-                const newFiltersObject = searchFilters
+                const newFiltersObject = Object.assign(
+                  { ...searchFilters },
+                  { page: 1 }
+                )
                 if (selectedCategories.length < categories.length) {
-                  setSelectedCategories(categories)
                   newFiltersObject.categories = categories
                 } else {
-                  setSelectedCategories([])
                   newFiltersObject.categories = []
                 }
                 setSearchFilters(newFiltersObject)
@@ -168,17 +163,11 @@ const SearchBar = (props) => {
                 <div key={key}>
                   <RadioButton
                     id={item}
-                    checked={sort === item}
+                    checked={searchFilters.sort === item}
                     onChange={() => {
-                      setSort(item)
-                      const newSearchFilters = searchFilters
-                      if (item === Lists.sortByList[0]) {
-                        newSearchFilters.sort = ''
-                      } else {
-                        newSearchFilters.sort = item
-                      }
+                      const newSearchFilters = Object.assign({}, searchFilters)
+                      newSearchFilters.sort = item
                       setSearchFilters(newSearchFilters)
-                      getPage(1)
                     }}
                   />
                 </div>

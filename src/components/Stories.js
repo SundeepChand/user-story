@@ -10,26 +10,37 @@ import SearchBar from './SearchBar'
 import ProductList from './ProductList'
 import userStory from '../services/user_story'
 
+const initSearchFilters = (queryString) => {
+  const searchFilters = parse(queryString, { arrayFormat: 'bracket' })
+  if (typeof searchFilters.statuses === typeof undefined) {
+    searchFilters.statuses = []
+  }
+  if (typeof searchFilters.categories === typeof undefined) {
+    searchFilters.categories = []
+  }
+  if (typeof searchFilters.sort === typeof undefined) {
+    searchFilters.sort = 'Most Voted'
+  }
+  const initialPage = Number(searchFilters.page)
+  searchFilters.page = isNaN(initialPage) || initialPage <= 0 ? 1 : initialPage
+  return searchFilters
+}
+
+const pruneDefaultValues = (searchFilters) => {
+  if (searchFilters.page === 1) {
+    searchFilters.page = undefined
+  }
+  if (searchFilters.sort === 'Most Voted') {
+    searchFilters.sort = undefined
+  }
+  return searchFilters
+}
+
 const Stories = ({ authorId, followerId }) => {
   const location = useLocation()
 
-  const filters = parse(location.search, { arrayFormat: 'bracket' })
-
-  const [searchFilters, setSearchFilters] = useState(filters ?? {})
-
-  const [selectedStatuses, setSelectedStatuses] = useState(
-    searchFilters.statuses ?? []
-  )
-
-  const initialPage = Number(searchFilters.page)
-  const [page, setPage] = useState(
-    isNaN(initialPage) || initialPage <= 0 ? 1 : initialPage
-  )
-
-  const [sort, setSort] = useState(searchFilters.sort ?? 'Most Voted')
-
-  const [selectedCategories, setSelectedCategories] = useState(
-    searchFilters.categories ?? []
+  const [searchFilters, setSearchFilters] = useState(
+    initSearchFilters(location.search)
   )
 
   const { promiseInProgress } = usePromiseTracker({ area: 'stories-div' })
@@ -50,37 +61,26 @@ const Stories = ({ authorId, followerId }) => {
 
   const getPage = useCallback(
     (page) => {
-      const newFiltersObject = searchFilters
-      if (page <= 1) {
-        newFiltersObject.page = undefined
-      } else {
-        newFiltersObject.page = page
-      }
+      const newFiltersObject = Object.assign({ ...searchFilters }, { page })
       setSearchFilters(newFiltersObject)
-      setPage(page)
     },
-    [searchFilters, setSearchFilters]
+    [searchFilters]
   )
 
   useEffect(() => {
-    const filtersString = stringify(searchFilters, {
-      arrayFormat: 'bracket',
-      skipEmptyString: true
-    })
+    const filtersString = stringify(
+      pruneDefaultValues(Object.assign({}, searchFilters)),
+      {
+        arrayFormat: 'bracket',
+        skipEmptyString: true
+      }
+    )
     if (filtersString === '') {
       navigate(location.pathname)
       return
     }
     navigate(`${location.pathname}?${filtersString}`)
-  }, [
-    searchFilters,
-    searchFilters.statuses,
-    searchFilters.categories,
-    searchFilters.product,
-    searchFilters.sort,
-    searchFilters.page,
-    location.pathname
-  ])
+  }, [searchFilters, location.pathname])
 
   useEffect(() => {
     const fetchStoryCount = async () => {
@@ -94,10 +94,10 @@ const Stories = ({ authorId, followerId }) => {
 
       try {
         const response = await userStory.getStoryCount(
-          selectedStatuses,
+          searchFilters.statuses,
           authorId,
           authorQuery,
-          selectedCategories,
+          searchFilters.categories,
           productQuery,
           searchQuery,
           followerId,
@@ -108,8 +108,8 @@ const Stories = ({ authorId, followerId }) => {
     }
     fetchStoryCount()
   }, [
-    selectedStatuses,
-    selectedCategories,
+    searchFilters.statuses,
+    searchFilters.categories,
     productQuery,
     searchQuery,
     authorQuery,
@@ -129,11 +129,11 @@ const Stories = ({ authorId, followerId }) => {
 
       try {
         const response = await userStory.getStories(
-          page,
-          selectedStatuses,
+          searchFilters.page,
+          searchFilters.statuses,
           authorId,
           authorQuery,
-          selectedCategories,
+          searchFilters.categories,
           productQuery,
           searchQuery,
           followerId,
@@ -145,9 +145,9 @@ const Stories = ({ authorId, followerId }) => {
     }
     trackPromise(fetchStories(), 'stories-div')
   }, [
-    selectedCategories,
-    selectedStatuses,
-    page,
+    searchFilters.categories,
+    searchFilters.statuses,
+    searchFilters.page,
     productQuery,
     searchQuery,
     authorQuery,
@@ -166,15 +166,15 @@ const Stories = ({ authorId, followerId }) => {
     }
 
     const updateStories = async () => {
-      if (sort === 'Most Voted') {
+      if (searchFilters.sort === 'Most Voted') {
         setStories(stories.sort(comparatorVotes))
       }
-      if (sort === 'Most Discussed') {
+      if (searchFilters.sort === 'Most Discussed') {
         setStories(stories.sort(comparatorComments))
       }
     }
     trackPromise(updateStories(), 'stories-div')
-  }, [sort, stories, setStories])
+  }, [searchFilters.sort, stories])
 
   return (
     <>
@@ -185,15 +185,8 @@ const Stories = ({ authorId, followerId }) => {
       />
 
       <SearchBar
-        sort={sort}
-        setSort={setSort}
         setSearchQuery={setSearchQuery}
         setAuthorQuery={setAuthorQuery}
-        getPage={getPage}
-        selectedStatuses={selectedStatuses}
-        setSelectedStatuses={setSelectedStatuses}
-        selectedCategories={selectedCategories}
-        setSelectedCategories={setSelectedCategories}
         searchFilters={searchFilters}
         setSearchFilters={setSearchFilters}
       />
@@ -201,7 +194,11 @@ const Stories = ({ authorId, followerId }) => {
       <div className='stories-div'>
         <StoriesList stories={stories} isLoading={promiseInProgress} />
       </div>
-      <Pagination page={page} getPage={getPage} storyCount={storyCount} />
+      <Pagination
+        page={searchFilters.page}
+        getPage={getPage}
+        storyCount={storyCount}
+      />
     </>
   )
 }
